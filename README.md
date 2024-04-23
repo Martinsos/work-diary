@@ -1,8 +1,8 @@
 
 ## TODO
-- [ ] Make a new Github repo with this project.
+- [X] Make a new Github repo with this project.
 - [ ] Go through main.wasp file and delete redundant stuff + rename stuff.
-- [ ] Go through .env.server and delete redundant stuff. Then `cp .env.server .env.server.example`.
+- [X] Go through .env.server and delete redundant stuff. Then `cp .env.server .env.server.example`.
 - [ ] Decide if I am going with email & pass or with Google login, or both.
 - [ ] Delete S3 logic, plausible logic.
 - [ ] Reorganize files by functionality.
