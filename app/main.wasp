@@ -79,7 +79,6 @@ entity User {=psl
   gptResponses              GptResponse[]
   contactFormMessages       ContactFormMessage[]
   tasks                     Task[]
-  files                     File[]
 psl=}
 
 entity GptResponse {=psl
@@ -105,20 +104,6 @@ entity Task {=psl
   description               String
   time                      String          @default("1")
   isDone                    Boolean         @default(false)
-psl=}
-
-entity File {=psl
-  id                        String          @id @default(uuid())
-
-  createdAt                 DateTime        @default(now())
-
-  user                      User            @relation(fields: [userId], references: [id])
-  userId                    Int
-
-  name                      String
-  type                      String
-  key                       String
-  uploadUrl                 String
 psl=}
 
 // TODO(martin): Should I delete this?
@@ -230,13 +215,6 @@ page CheckoutPage {
   component: import Checkout from "@src/client/app/CheckoutPage"
 }
 
-route FileUploadRoute { path: "/file-upload", to: FileUploadPage }
-page FileUploadPage {
-  authRequired: true,
-  component: import FileUpload from "@src/client/app/FileUploadPage"
-}
-
-
 //#region Admin routes
 route AdminRoute { path: "/admin", to: DashboardPage }
 page DashboardPage {
@@ -340,12 +318,6 @@ action updateUserById {
   entities: [User]
 }
 
-action createFile {
-  fn: import { createFile } from "@src/server/actions.js",
-  entities: [User, File]
-}
-
-
 // 📚 Queries
 
 query getGptResponses {
@@ -356,16 +328,6 @@ query getGptResponses {
 query getAllTasksByUser {
   fn: import { getAllTasksByUser } from "@src/server/queries.js",
   entities: [Task]
-}
-
-query getAllFilesByUser {
-  fn: import { getAllFilesByUser } from "@src/server/queries.js",
-  entities: [User, File]
-}
-
-query getDownloadFileSignedURL {
-  fn: import { getDownloadFileSignedURL } from "@src/server/queries.js",
-  entities: [User, File]
 }
 
 query getDailyStats {
