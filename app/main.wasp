@@ -6,14 +6,14 @@ app WorkDiary {
   head: [
         "<meta property='og:type' content='website' />",
         "<meta property='og:title' content='Work Diary' />",
-        "<meta property='og:url' content='https://theworkdiary.com' />", 
+        "<meta property='og:url' content='https://theworkdiary.com' />",
         "<meta property='og:description' content='Organize your workday.' />",
         "<meta property='og:image' content='https://theworkdiary.com/public-banner.png' />",
-        "<meta name='twitter:image' content='https://theworkdiary.com/public-banner.png' />", 
+        "<meta name='twitter:image' content='https://theworkdiary.com/public-banner.png' />",
         "<meta name='twitter:image:width' content='800' />",
         "<meta name='twitter:image:height' content='400' />",
         "<meta name='twitter:card' content='summary_large_image' />",
-        // google analytics only needs one script and will automatically detect if you are in dev mode 
+        // TODO: Add google analytics script here.
         "<!-- Google tag (gtag.js) --><script>...</script>"
   ],
   auth: {
@@ -22,7 +22,7 @@ app WorkDiary {
       email: {
         fromField: {
           name: "WorkDiary App",
-          email: "team@theworkdiary.com" 
+          email: "team@theworkdiary.com"
         },
         emailVerification: {
           clientRoute: EmailVerificationRoute,
@@ -33,16 +33,12 @@ app WorkDiary {
           getEmailContentFn: import { getPasswordResetEmailContent } from "@src/server/auth/email.js",
         },
         userSignupFields: import { getEmailUserFields } from "@src/server/auth/setUsername.js",
-      },
-      // google: { // Guide for setting up Auth via Google https://wasp-lang.dev/docs/auth/social-auth/overview
-      //   userSignupFields: import { getGoogleUserFields } from "@src/server/auth/setUsername.js",
-      //   configFn: import { getGoogleAuthConfig } from "@src/server/auth/setUsername.js",
-      // },
+      }
     },
     onAuthFailedRedirectTo: "/login",
     onAuthSucceededRedirectTo: "/demo-app",
   },
-  db: { 
+  db: {
     system: PostgreSQL,
     seeds: [
       import { devSeedUsers } from "@src/server/scripts/usersSeed.js",
@@ -51,36 +47,28 @@ app WorkDiary {
   client: {
     rootComponent: import App from "@src/client/App",
   },
-  
+
   emailSender: {
-    // Note that the "Dummy" provider is just for local development purposes. 
-    // Make sure to check the server logs for the confirmation email token (it will not be sent to an address)!
-    // Please use SendGrid in production. See: https://docs.opensaas.sh/guides/email-sending/
-    provider: Dummy, 
+    provider: Dummy,
     defaultFrom: {
-      name: "Open SaaS App",
-      // When using SendGrid, you must use the same email address that you configured your account to send out emails with!
-      email: "team@theworkdiary.com" 
+      name: "The Work Diary App",
+      email: "team@theworkdiary.com"
     },
   },
 }
 
-/* 💽 Wasp defines DB entities via Prisma Database Models: 
- * https://wasp-lang.dev/docs/data-model/entities
- */
-
 entity User {=psl
   id                        Int             @id @default(autoincrement())
 
+  createdAt                 DateTime        @default(now())
+
   email                     String?         @unique
   username                  String?         @unique
-
-  createdAt                 DateTime        @default(now())
-  lastActiveTimestamp       DateTime        @default(now())
-
   isAdmin                   Boolean         @default(false)
 
-  stripeId                  String? 
+  lastActiveTimestamp       DateTime        @default(now())
+
+  stripeId                  String?
   checkoutSessionId         String?
   subscriptionTier          String?
   subscriptionStatus        String?
@@ -89,55 +77,69 @@ entity User {=psl
   credits                   Int             @default(3)
 
   gptResponses              GptResponse[]
-  contactFormMessages       ContactFormMessage[]     
+  contactFormMessages       ContactFormMessage[]
   tasks                     Task[]
   files                     File[]
 psl=}
 
 entity GptResponse {=psl
   id                        String          @id @default(uuid())
-  content                   String
-  user                      User            @relation(fields: [userId], references: [id])
-  userId                    Int
+
   createdAt                 DateTime        @default(now())
   updatedAt                 DateTime        @updatedAt
+
+  user                      User            @relation(fields: [userId], references: [id])
+  userId                    Int
+
+  content                   String
 psl=}
 
 entity Task {=psl
   id                        String          @id @default(uuid())
+
+  createdAt                 DateTime        @default(now())
+
+  user                      User            @relation(fields: [userId], references: [id])
+  userId                    Int
+
   description               String
   time                      String          @default("1")
   isDone                    Boolean         @default(false)
-  user                      User            @relation(fields: [userId], references: [id])
-  userId                    Int
-  createdAt                 DateTime        @default(now())
 psl=}
 
 entity File {=psl
   id                        String          @id @default(uuid())
+
+  createdAt                 DateTime        @default(now())
+
+  user                      User            @relation(fields: [userId], references: [id])
+  userId                    Int
+
   name                      String
   type                      String
   key                       String
   uploadUrl                 String
-  user                      User            @relation(fields: [userId], references: [id])
-  userId                    Int
-  createdAt                 DateTime        @default(now())
 psl=}
 
+// TODO(martin): Should I delete this?
 // TODO: add functionality to allow users to send messages to admin
 // and make them accessible via the admin dashboard
 entity ContactFormMessage {=psl
   id                        String          @id @default(uuid())
-  content                   String
+
+  createdAt                 DateTime        @default(now())
+
   user                      User            @relation(fields: [userId], references: [id])
   userId                    Int
-  createdAt                 DateTime        @default(now())
+
+  content                   String
   isRead                    Boolean         @default(false)
-  repliedAt                 DateTime?       
+  repliedAt                 DateTime?
 psl=}
 
-entity DailyStats {=psl 
+entity DailyStats {=psl
   id                               Int             @id @default(autoincrement())
+
   date                             DateTime        @default(now()) @unique
   totalViews                       Int             @default(0)
   prevDayViewsChangePercent        String          @default("0")
@@ -151,30 +153,33 @@ entity DailyStats {=psl
 psl=}
 
 entity PageViewSource {=psl
-  date                     DateTime        @default(now())       
-  name                     String          
-  visitors                 Int             
+  @@id([date, name])
+  date                     DateTime        @default(now())
+  name                     String
+
   dailyStats               DailyStats?     @relation(fields: [dailyStatsId], references: [id])
   dailyStatsId             Int?
-  @@id([date, name])
+
+  visitors                 Int
 psl=}
 
 entity Logs {=psl
   id                       Int             @id @default(autoincrement())
+
   createdAt                DateTime        @default(now())
+
   message                  String
   level                    String
 psl=}
 
-/* 📡 These are the Wasp Routes (You can protect them easily w/ 'authRequired: true');
- * https://wasp-lang.dev/docs/tutorial/pages
- */
 
 route LandingPageRoute { path: "/", to: LandingPage }
 page LandingPage {
   component: import LandingPage from "@src/client/landing-page/LandingPage"
 }
 
+
+//#region Auth routes
 route LoginRoute { path: "/login", to: LoginPage }
 page LoginPage {
   component: import Login from "@src/client/auth/LoginPage"
@@ -199,6 +204,8 @@ route EmailVerificationRoute { path: "/email-verification", to: EmailVerificatio
 page EmailVerificationPage {
   component: import { EmailVerification } from "@src/client/auth/EmailVerification",
 }
+//#endregion Auth routes
+
 
 route DemoAppRoute { path: "/demo-app", to: DemoAppPage }
 page DemoAppPage {
@@ -229,6 +236,8 @@ page FileUploadPage {
   component: import FileUpload from "@src/client/app/FileUploadPage"
 }
 
+
+//#region Admin routes
 route AdminRoute { path: "/admin", to: DashboardPage }
 page DashboardPage {
   authRequired: true,
@@ -288,6 +297,7 @@ page AdminUIButtonsPage {
   authRequired: true,
   component: import AdminUI from "@src/client/admin/pages/UiElements/Buttons"
 }
+//#endregion
 
 /* ⛑ These are the Wasp Operations, which allow the client and server to interact:
  * https://wasp-lang.dev/docs/data-model/operations/overview
@@ -368,31 +378,12 @@ query getPaginatedUsers {
   entities: [User]
 }
 
-/*
- * 📡 These are custom Wasp API Endpoints. Use them for callbacks, webhooks, etc.
- * https://wasp-lang.dev/docs/advanced/apis
- */ 
 
 api stripeWebhook {
   fn: import { stripeWebhook } from "@src/server/webhooks/stripe.js",
   entities: [User],
   middlewareConfigFn: import { stripeMiddlewareFn } from "@src/server/webhooks/stripe.js",
   httpRoute: (POST, "/stripe-webhook")
-}
-
-/* 🕵️‍♂️ These are the Wasp Jobs. Use them to set up recurring tasks and/or queues:
- * https://wasp-lang.dev/docs/advanced/jobs
- */
-
-job emailChecker {
-  executor: PgBoss,
-  perform: {
-    fn: import { checkAndQueueEmails } from "@src/server/workers/checkAndQueueEmails.js"
-  },
-  schedule: {
-    cron: "0 7 * * 1" // at 7:00 am every Monday
-  },
-  entities: [User]
 }
 
 job dailyStatsJob {
